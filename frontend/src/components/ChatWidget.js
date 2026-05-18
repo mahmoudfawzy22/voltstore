@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { connectSocket, getSocket } from '../services/socket';
+import api from '../services/api';
 import './ChatWidget.css';
 
 const ChatWidget = () => {
@@ -10,45 +10,64 @@ const ChatWidget = () => {
   const [input, setInput]         = useState('');
   const [resolved, setResolved]   = useState(false);
   const [unread, setUnread]       = useState(0);
-  const [connected, setConnected] = useState(false);
+  const [convId, setConvId]       = useState(null);
+  const [sending, setSending]     = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef       = useRef(null);
+  const pollRef        = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Connect socket and join chat when user logs in
+  // Load conversation on mount
   useEffect(() => {
     if (!user || user.isAdmin) return;
 
-    const token  = localStorage.getItem('token');
-    const socket = connectSocket(token);
-
-    socket.emit('join_chat');
-
-    socket.on('chat_ready', ({ messages: msgs }) => {
-      setMessages(msgs);
-      setConnected(true);
-    });
-
-    socket.on('new_message', ({ message }) => {
-      setMessages((prev) => [...prev, message]);
-      if (message.isAdmin && !open) {
-        setUnread((u) => u + 1);
+    const loadConversation = async () => {
+      try {
+        const res = await api.get('/chat/my');
+        const conv = res.data.conversation;
+        setConvId(conv._id);
+        setMessages(conv.messages);
+        setResolved(conv.status === 'resolved');
+      } catch (err) {
+        console.error('Failed to load conversation:', err);
       }
-    });
-
-    socket.on('conversation_resolved', () => setResolved(true));
-    socket.on('connect',    () => setConnected(true));
-    socket.on('disconnect', () => setConnected(false));
-
-    return () => {
-      socket.off('chat_ready');
-      socket.off('new_message');
-      socket.off('conversation_resolved');
     };
+
+    loadConversation();
   }, [user]);
+
+  // Poll for new messages every 3 seconds
+  useEffect(() => {
+    if (!user || user.isAdmin || !convId) return;
+
+    const poll = async () => {
+      try {
+        const res = await api.get('/chat/my');
+        const conv = res.data.conversation;
+        setMessages((prev) => {
+          if (conv.messages.length !== prev.length) {
+            // Count new admin messages
+            const newAdminMsgs = conv.messages
+              .slice(prev.length)
+              .filter((m) => m.isAdmin).length;
+            if (newAdminMsgs > 0 && !open) {
+              setUnread((u) => u + newAdminMsgs);
+            }
+          }
+          return conv.messages;
+        });
+        setResolved(conv.status === 'resolved');
+      } catch (err) {
+        console.error('Poll error:', err);
+      }
+    };
+
+    pollRef.current = setInterval(poll, 3000);
+    return () => clearInterval(pollRef.current);
+  }, [convId, user, open]);
 
   // Scroll on new messages
   useEffect(() => { scrollToBottom(); }, [messages, open]);
@@ -61,14 +80,21 @@ const ChatWidget = () => {
     }
   }, [open]);
 
-  const sendMessage = useCallback(() => {
+  const sendMessage = useCallback(async () => {
     const text = input.trim();
-    if (!text || resolved) return;
-    const socket = getSocket();
-    if (!socket) return;
-    socket.emit('send_message', { text });
-    setInput('');
-  }, [input, resolved]);
+    if (!text || resolved || sending) return;
+
+    setSending(true);
+    try {
+      const res = await api.post('/chat/my/message', { text });
+      setMessages((prev) => [...prev, res.data.message]);
+      setInput('');
+    } catch (err) {
+      console.error('Failed to send message:', err);
+    } finally {
+      setSending(false);
+    }
+  }, [input, resolved, sending]);
 
   const handleKey = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -77,7 +103,6 @@ const ChatWidget = () => {
     }
   };
 
-  // Don't render for admins or guests
   if (!user || user.isAdmin) return null;
 
   const formatTime = (iso) =>
@@ -85,7 +110,6 @@ const ChatWidget = () => {
 
   return (
     <div className="chat-widget">
-      {/* Chat window */}
       {open && (
         <div className="chat-window card fade-in">
           {/* Header */}
@@ -93,12 +117,12 @@ const ChatWidget = () => {
             <div className="chat-header-info">
               <div className="chat-avatar-wrap">
                 <img src="/logo.svg" alt="Support" className="chat-logo" />
-                <span className={`chat-status-dot ${connected ? 'online' : 'offline'}`} />
+                <span className="chat-status-dot online" />
               </div>
               <div>
                 <div className="chat-header-title">VoltStore Support</div>
                 <div className="chat-header-sub">
-                  {resolved ? '✅ Resolved' : connected ? 'Online' : 'Connecting…'}
+                  {resolved ? '✅ Resolved' : 'Online'}
                 </div>
               </div>
             </div>
@@ -138,13 +162,13 @@ const ChatWidget = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKey}
-              disabled={resolved}
+              disabled={resolved || sending}
               rows={1}
             />
             <button
               className="chat-send"
               onClick={sendMessage}
-              disabled={!input.trim() || resolved}
+              disabled={!input.trim() || resolved || sending}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"/>
