@@ -1,0 +1,198 @@
+.admin-page {
+  padding: 40px 0 60px;
+}
+
+.admin-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+/* Table */
+.admin-table-wrap { overflow-x: auto; }
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.admin-table th {
+  text-align: left;
+  padding: 14px 16px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.admin-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.admin-table tr:last-child td { border-bottom: none; }
+.admin-table tr:hover td { background: var(--bg); }
+
+.table-product {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.table-img {
+  width: 52px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--bg);
+  flex-shrink: 0;
+}
+.table-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+.table-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  max-width: 320px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.table-price {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--primary);
+}
+.table-empty {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 48px 16px !important;
+  font-style: italic;
+}
+
+/* Stock badge */
+.stock-badge {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.stock-badge.ok  { background: #F0FDF4; color: #15803D; }
+.stock-badge.low { background: #FFF7ED; color: #C2410C; }
+.stock-badge.out { background: #FEF2F2; color: #B91C1C; }
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  backdrop-filter: blur(3px);
+}
+
+.modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal-sm { max-width: 400px; }
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+.modal-close:hover { background: var(--bg); color: var(--text-primary); }
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+.modal-body p { color: var(--text-secondary); line-height: 1.6; }
+.modal-body p strong { color: var(--text-primary); }
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+
+/* Image preview */
+.image-preview {
+  width: 100%;
+  height: 160px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg);
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+}
+.image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Form row */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.input-error { border-color: var(--error) !important; }
+
+@media (max-width: 640px) {
+  .form-row { grid-template-columns: 1fr; }
+  .admin-table th:nth-child(2),
+  .admin-table td:nth-child(2) { display: none; }
+}
+
+/* Dark mode admin */
+[data-theme="dark"] .admin-table th { background: #1E293B; }
+[data-theme="dark"] .admin-table tr:hover td { background: #1E293B; }
+[data-theme="dark"] .modal-footer { background: #1E293B; }
+[data-theme="dark"] .image-preview { background: #1E293B; border-color: var(--border); }
+[data-theme="dark"] .modal-overlay { background: rgba(0,0,0,0.7); }
